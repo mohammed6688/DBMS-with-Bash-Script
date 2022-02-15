@@ -174,7 +174,7 @@ function manipulateDB() {
                 if [ $tablename = $i ]; then
                     # it exists
                     clear
-                    echo -e "$tablename table is already exist\n"
+                      echo -e "$tablename table is already exist\n"
                     flag=1
                     break
                 fi

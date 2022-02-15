@@ -42,10 +42,69 @@ function connectDB() {
                 echo -e "ENTER NUMBER OF COLUMNS : \c"
                 read colsNum
               done
+              sep="|"
+              rSep="\n"
+              metaData="Field"$sep"Type"$sep"key"
+              for ((i = 1; i <= $colsNum; i++)); do
+                if [[ $i == 1 ]]; then
+                  echo -e "ENTER PRIMARY KEY COLUMN NAME : \C"
+                  read PKname
+                  while [[ ! ($PKname =~ ^[a-zA-Z]*$) || $PKname = "" ]]; do
+                    echo -e "invalid column name !!"
+                    echo -e "ENTER PRIMARY KEY COLUMN NAME : \c"
+                    read PKname
+                  done
+                else
+                  echo -e "ENTER COLUMN NO.$i NAME : \C"
+                  read colName
+                  while [[ ! ($colName =~ ^[a-zA-Z]*$) || $colName = "" ]]; do
+                    echo -e "invalid column name !!"
+                    echo -e "Name of Column No.$i: \c"
+                    read colName
+                  done
+                fi
+                echo -e "Type of Column $colName: "
+                select var in "int" "varchar"; do
+                  case $var in
+                  int)
+                    colType="int"
+                    break
+                    ;;
+                  varchar)
+                    colType="varchar"
+                    break
+                    ;;
+                  *)
+                    echo INVALED CHOICE
+                    ;;
+                  esac
+                done
 
+                if [[ $i -eq 1 ]]; then
+                  metaData+=$rSep$colName$sep$colType$sep"PK"
+                else
+                  metaData+=$rSep$colName$sep$colType$sep""
+                fi
+                # columns names
+                if [[ $i == $colsNum ]]; then
+                  temp=$temp$colName
+                else
+                  # when count < colsNum
+                  temp=$temp$colName$sep
+                fi
+              done
+              touch .$tablename
+              echo -e $metaData >>.$tablename
+              touch $tablename
+              echo -e $temp >>$tablename
+              clear
+              if [[ $? == 0 ]]; then
+                echo -e "Table Created Successfully\n"
+              else
+                echo -e "Error Creating Table $tablename\n"
+              fi
             fi
           fi
-
           break
           ;;
         list-table)
