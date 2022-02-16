@@ -16,6 +16,112 @@ function listDB() {
   fi
 }
 
+function listTable() {
+  x=$(ls | wc -l)
+  if [ $x -eq 0 ]; then
+    echo -e "THERE IS NO TABLES FOUND\n"
+  else
+    echo $x TABLES FOUND :
+    ls
+    echo -e "\n"
+  fi
+}
+
+function deleteTable() {
+  echo -e "WRITE THE TABLE YOU WANT TO DROP \n"
+  read tablename
+  if [ -f $tablename ]; then
+    rm -r $tablename
+    rm -r .$tablename
+    echo "THE TABLE DELETED SUCCESSFULLY"
+  else
+    echo $tablename IS NO found
+  fi
+}
+
+function insertInTable() {
+  echo ENTER THE TABLE NAME
+  read tableName
+  if ! [ -f $tableName ]; then
+    echo $tableName IS NOT EXIST
+  else
+    colsNum=$(awk 'END{print NR}' .$tableName)
+    sep="|"
+    rSep="\n"
+    row=""
+    for ((i = 2; i <= $colsNum; i++)); do
+      # trace on each record in metadata hidden file
+      colName=$(awk 'BEGIN{FS="|"}{ if(NR=='$i') print $1}' .$tableName)
+      colType=$(awk 'BEGIN{FS="|"}{if(NR=='$i') print $2}' .$tableName)
+      # get record values from user
+      echo -e "$colName ($colType) = \c"
+      read data
+      # is it a primary key ?
+      # colKey == "PK"
+      if [[ $i -eq 2 ]]; then
+        while [[ true ]]; do
+          # if it is a primary key so
+          # check if it is available
+          if [[ $colType == "int" ]]; then
+            while [[ ! ($data =~ ^[0-9]*$) && $data != "" ]]; do
+              echo -e "PRIMARY KEY IS INVALID"
+              echo -e "$colName ($colType) = \c"
+              read data
+            done
+          fi
+          if [[ $colType == "varchar" ]]; then
+            while [[ ! ($data =~ ^[a-zA-Z]*$) && $data != "" ]]; do
+              echo -e "PRIMARY KEY IS INVALID"
+              echo -e "$colName ($colType) = \c"
+              read data
+            done
+          fi
+          if [ "$data" = "$(awk -F "|" '{ print $1 }' $tableName | grep "^$data$")" ]; then
+            echo -e "PRIMARY KEY IS ALREADY EXIST \n"
+            echo -e "$colName ($colType) = \c"
+            read data
+          else
+            break
+          fi
+        done
+      fi
+      # Validate datatype
+      # is it an integer ?
+      if [[ $i -ne 2 ]]; then
+        if [[ $colType == "int" ]]; then
+          while ! [[ $data =~ ^[0-9]*$ ]]; do
+            echo -e "invalid DataType !!"
+            echo -e "$colName ($colType) = \c"
+            read data
+          done
+        fi
+        # is it a varchar ?
+        if [[ $colType == "varchar" ]]; then
+          while ! [[ $data =~ ^[a-zA-Z]*$ ]]; do
+            echo -e "invalid DataType !!"
+            echo -e "$colName ($colType) = \c"
+            read data
+          done
+        fi
+      fi
+      #Set value in record
+      if [[ $i == $colsNum ]]; then
+        row=$row$data$rSep
+      else
+        row=$row$data$sep
+      fi
+      echo -e $row"\c" >>$tableName
+      clear
+      row=""
+    done
+    if [[ $? == 0 ]]; then
+      echo -e "\nData Inserted Successfully\n"
+    else
+      echo -e "\nError Inserting Data into Table $tableName\n"
+    fi
+  fi
+}
+
 function connectDB() {
   echo ENTER THE DB YOU WANT TO CONNECT ON:
   read DBname
@@ -45,17 +151,17 @@ function connectDB() {
               sep="|"
               rSep="\n"
               metaData="Field"$sep"Type"$sep"key"
-              for ((i = 1; i <= $colsNum; i++)); do
-                if [[ $i == 1 ]]; then
-                  echo -e "ENTER PRIMARY KEY COLUMN NAME : \C"
-                  read PKname
-                  while [[ ! ($PKname =~ ^[a-zA-Z]*$) || $PKname = "" ]]; do
+              for ((i = 0; i < $colsNum; i++)); do
+                if [[ $i == 0 ]]; then
+                  echo -e "ENTER PRIMARY KEY COLUMN NAME : \c"
+                  read colName
+                  while [[ ! ($colName =~ ^[a-zA-Z]*$) || $colName = "" ]]; do
                     echo -e "invalid column name !!"
                     echo -e "ENTER PRIMARY KEY COLUMN NAME : \c"
-                    read PKname
+                    read colName
                   done
                 else
-                  echo -e "ENTER COLUMN NO.$i NAME : \C"
+                  echo -e "ENTER COLUMN NO.$i NAME : \c"
                   read colName
                   while [[ ! ($colName =~ ^[a-zA-Z]*$) || $colName = "" ]]; do
                     echo -e "invalid column name !!"
@@ -80,7 +186,7 @@ function connectDB() {
                   esac
                 done
 
-                if [[ $i -eq 1 ]]; then
+                if [[ $i -eq 0 ]]; then
                   metaData+=$rSep$colName$sep$colType$sep"PK"
                 else
                   metaData+=$rSep$colName$sep$colType$sep""
@@ -109,20 +215,22 @@ function connectDB() {
           ;;
         list-table)
           clear
-          showList
+          listTable
           break
           ;;
         drop-table)
           clear
+          deleteTable
           break
           ;;
         insert-in-table)
           clear
+          insertInTable
           break
           ;;
         select-from-table)
           clear
-
+          break
           ;;
         delete-from-table)
           clear
@@ -149,8 +257,9 @@ function connectDB() {
     echo -e $DBname " IS NOT FOUND \n"
   fi
 }
+
 while [ 1 ]; do
-  echo ENTER THE CHOICE YOU WANT
+  echo $(tput bold)"ENTER THE CHOICE YOU WANT"$(tput sgr0)
   select choice in "Create-Database" "List-Tables" "Connect-To-Databases" "Drop-Database" "EXIT"; do
     case $choice in
     Create-Database)
