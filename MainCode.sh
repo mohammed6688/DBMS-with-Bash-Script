@@ -122,6 +122,36 @@ function insertInTable() {
   fi
 }
 
+function deleteFromTable() {
+  echo ENTER THE TABLE NAME
+  read tableName
+  if ! [ -f $tableName ]; then
+    echo $tableName IS NOT EXIST
+  else
+    echo -e "Enter Condition Value: \c"
+    read value
+    # check if your Value exist
+    result=$(awk 'BEGIN{FS="|"}{if ( $1 == "'$value'" ) print $1 }' $tableName 2>>/dev/null)
+    # echo $result
+    if [[ $result == "" ]]; then
+      # it dosn't exist
+      echo "Value Not Found"
+    else
+      # get the line number of the value to delete it
+      NR=$(awk 'BEGIN{FS="|"}{if ( $1 == "'$value'" ) print NR}' $tableName 2>>/dev/null)
+      # edit the table and delete the record
+      sed -i ''$NR'd' $tableName 2>>/dev/null
+      # clear
+      if [[ $? == 0 ]]; then
+        # The Row Deleted Successfully
+        echo -e "\nRow Deleted Successfully\n"
+      else
+        echo -e "\nRow didn't delete\n"
+      fi
+    fi
+  fi
+}
+
 function connectDB() {
   echo ENTER THE DB YOU WANT TO CONNECT ON:
   read DBname
@@ -234,6 +264,7 @@ function connectDB() {
           ;;
         delete-from-table)
           clear
+          deleteFromTable
           break
           ;;
         back-to-db-menu)
