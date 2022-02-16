@@ -154,7 +154,7 @@ function deleteFromTable() {
 function selectTable() {
   while [ 1 ]; do
     echo CHOOSE FROM SELECT MENU
-    select choice in "select-all" "select-specific-record" "back-to-db-menu" "back-to-table-menu" "exit"; do
+    select choice in "select-all" "select-specific-record" "back-to-table-menu" "exit"; do
       case $choice in
       select-all)
         echo -e "ENTER TABLE NAME : \c"
@@ -206,11 +206,6 @@ function selectTable() {
           echo -e "\n"
         fi
         break
-        ;;
-      back-to-db-menu)
-        clear
-        cd ..
-        break 2
         ;;
       back-to-table-menu)
         clear
@@ -370,7 +365,7 @@ function connectDB() {
 
 while [ 1 ]; do
   echo $(tput bold)"ENTER THE CHOICE YOU WANT"$(tput sgr0)
-  select choice in "Create-Database" "List-Tables" "Connect-To-Databases" "Drop-Database" "EXIT"; do
+  select choice in "Create-Database" "List-Databases" "Connect-To-Databases" "Drop-Database" "EXIT"; do
     case $choice in
     Create-Database)
       echo "ENTER YOUR Database NAME"
@@ -393,7 +388,7 @@ while [ 1 ]; do
         fi
       fi
       ;;
-    List-Tables)
+    List-Databases)
       clear
       listDB
       break
