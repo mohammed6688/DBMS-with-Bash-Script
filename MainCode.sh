@@ -143,13 +143,91 @@ function deleteFromTable() {
       sed -i ''$NR'd' $tableName 2>>/dev/null
       # clear
       if [[ $? == 0 ]]; then
-        # The Row Deleted Successfully
         echo -e "\nRow Deleted Successfully\n"
       else
         echo -e "\nRow didn't delete\n"
       fi
     fi
   fi
+}
+
+function selectTable() {
+  while [ 1 ]; do
+    echo CHOOSE FROM SELECT MENU
+    select choice in "select-all" "select-specific-record" "back-to-db-menu" "back-to-table-menu" "exit"; do
+      case $choice in
+      select-all)
+        echo -e "ENTER TABLE NAME : \c"
+        read tableName
+        if ! [[ -f $tableName ]]; then
+          # it dosn't exist
+          clear
+          echo -e "Table $tableName isn't existed\n"
+          break
+        fi
+        clear
+        # display each column in table
+        column -t -s '|' $tableName 2>>/dev/null
+        if [[ $? != 0 ]]; then
+          echo "Error Displaying Table $tableName"
+        fi
+        echo -e "\n"
+        break
+        ;;
+      select-specific-record)
+        echo -e "Enter Table Name: \c"
+        read tableName
+        if ! [[ -f $tableName ]]; then
+          # it dosn't exist
+          clear
+          echo -e "Table $tableName isn't existed\n"
+          # back to the menu 2
+          break
+        fi
+        echo -e "Enter Condition Value: \c"
+        read value
+        # check if your Value exist
+        result=$(awk 'BEGIN{FS="|"}{if ( $1 == "'$value'" ) print $1 }' $tableName 2>>/dev/null)
+        # echo $result
+        if [[ $result == "" ]]; then
+          # it dosn't exist
+          clear
+          echo -e "Value Not Found\n"
+        else
+          # it exists so
+          # get the line number of the value to select it
+          NR=$(awk 'BEGIN{FS="|"}{if ( $1 == "'$value'" ) print NR}' $tableName 2>>/dev/null)
+          clear
+          echo $(awk 'BEGIN{FS="|";}{if ( NR == 1 ) print $0 }' $tableName 2>>/dev/null)
+          echo $(awk 'BEGIN{FS="|";}{if ( NR == '$NR' ) print $0 }' $tableName 2>>/dev/null)
+          if [[ $? != 0 ]]; then
+            echo -e "\nError selecting Data from Table $tableName\n"
+          fi
+          echo -e "\n"
+        fi
+        break
+        ;;
+      back-to-db-menu)
+        clear
+        cd ..
+        break 2
+        ;;
+      back-to-table-menu)
+        clear
+        break 2
+        ;;
+      exit)
+        clear
+        exit
+        ;;
+      *)
+        clear
+        echo INVALID CHOICE
+        break
+        ;;
+      esac
+    done
+  done
 }
 
 function connectDB() {
@@ -260,6 +338,7 @@ function connectDB() {
           ;;
         select-from-table)
           clear
+          selectTable
           break
           ;;
         delete-from-table)
