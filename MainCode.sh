@@ -97,7 +97,7 @@ function insertInTable() {
         fi
         # is it a varchar ?
         if [[ $colType == "varchar" ]]; then
-          while ! [[ $data =~ ^[a-zA-Z]*$ ]]; do
+          while ! [[ $data =~ ^[a-zA-Z!@$%*_+-]*$ ]]; do
             echo -e "invalid DataType !!"
             echo -e "$colName ($colType) = \c"
             read data
