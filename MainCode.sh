@@ -96,12 +96,9 @@ function insertInTable() {
           done
         fi
         # is it a varchar ?
-        if [[ $colType == "varchar" ]]; then
-          while ! [[ $data =~ ^[a-zA-Z!@$%*_+-]*$ ]]; do
-            echo -e "invalid DataType !!"
+        if [[ $colType == "varchar" ]]; then          
             echo -e "$colName ($colType) = \c"
-            read data
-          done
+            read data          
         fi
       fi
       #Set value in record
