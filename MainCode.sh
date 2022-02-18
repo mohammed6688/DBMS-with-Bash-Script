@@ -5,6 +5,28 @@ cd DB
 clear
 PS3="enter value >>>"
 
+function createDB(){
+   echo "ENTER YOUR Database NAME"
+      read DBname
+      #      check if db name is valid
+      if ! [[ $DBname =~ ^[a-zA-Z][a-zA-Z0-9]*$ ]]; then
+        clear
+        echo -e "ENTER VALID DATABASE NAME \n"
+      else
+        #        check if the database exist
+        if [ -d $DBname ]; then
+          clear
+          echo -e $DBname "DATABASE ALREDY EXISTES \n"
+          break
+        else
+          clear
+          mkdir $DBname
+          echo -e $DBname "CREATED SUCCESSFULLY \n"
+          break
+        fi
+      fi
+}
+
 function listDB() {
   x=$(ls | wc -l)
   if [ $x -eq 0 ]; then
@@ -16,12 +38,108 @@ function listDB() {
   fi
 }
 
+function dropDB(){
+  echo -e "ENTER THE NAME OF DB YOU WANT TO DROP"
+      read DBname
+      if [ -d $DBname ]; then
+        clear
+        rm -r $DBname
+        echo -e $DBname "DROP SUCCESSFULLY \n"
+        break
+      else
+        clear
+        echo -e $DBname" IS NOT FOUND \n"
+        break
+      fi
+}
+
+function createTable(){
+   echo ENTER TABLE NAME
+          read tablename
+          if ! [[ $tablename =~ ^[a-zA-Z][a-zA-Z0-9]*$ ]]; then
+            echo INVAILD TABLE NAME
+          else
+            if [ -f $tablename ]; then
+              echo -e $tablename " IS ALREADY EXIST \n"
+            else
+              echo -e "ENTER NUMBER OF COLUMNS : \c"
+              read colsNum
+              while [[ ! ($colsNum =~ ^[0-9]*$) || $colsNum = "" ]]; do
+                echo -e "INVALID NUMBER"
+                echo -e "ENTER NUMBER OF COLUMNS : \c"
+                read colsNum
+              done
+              sep="|"
+              rSep="\n"
+              metaData="Field"$sep"Type"$sep"key"
+              for ((i = 0; i < $colsNum; i++)); do
+                if [[ $i == 0 ]]; then
+                  echo -e "ENTER PRIMARY KEY COLUMN NAME : \c"
+                  read colName
+                  while [[ ! ($colName =~ ^[a-zA-Z]*$) || $colName = "" ]]; do
+                    echo -e "invalid column name !!"
+                    echo -e "ENTER PRIMARY KEY COLUMN NAME : \c"
+                    read colName
+                  done
+                else
+                  echo -e "ENTER COLUMN NO.$i NAME : \c"
+                  read colName
+                  while [[ ! ($colName =~ ^[a-zA-Z]*$) || $colName = "" ]]; do
+                    echo -e "invalid column name !!"
+                    echo -e "Name of Column No.$i: \c"
+                    read colName
+                  done
+                fi
+                echo -e "Type of Column $colName: "
+                select var in "int" "varchar"; do
+                  case $var in
+                  int)
+                    colType="int"
+                    break
+                    ;;
+                  varchar)
+                    colType="varchar"
+                    break
+                    ;;
+                  *)
+                    echo INVALED CHOICE
+                    ;;
+                  esac
+                done
+
+                if [[ $i -eq 0 ]]; then
+                  metaData+=$rSep$colName$sep$colType$sep"PK"
+                else
+                  metaData+=$rSep$colName$sep$colType$sep""
+                fi
+                # columns names
+                if [[ $i == $colsNum ]]; then
+                  temp=$temp$colName
+                else
+                  # when count < colsNum
+                  temp=$temp$colName$sep
+                fi
+              done
+              touch .$tablename
+              echo -e $metaData >>.$tablename
+              touch $tablename
+              echo -e $temp >>$tablename
+              clear
+              if [[ $? == 0 ]]; then
+                echo -e "Table Created Successfully\n"
+              else
+                echo -e "Error Creating Table $tablename\n"
+              fi
+            fi
+          fi
+}
+
 function listTable() {
   x=$(ls | wc -l)
   if [ $x -eq 0 ]; then
     echo -e "THERE IS NO TABLES FOUND\n"
   else
-    echo $x TABLES FOUND :
+    echo There is $x TABLES FOUND in Database :
     ls
     echo -e "\n"
   fi
@@ -40,7 +158,8 @@ function deleteTable() {
 }
 
 function insertInTable() {
-  echo ENTER THE TABLE NAME
+  listTable
+  echo ENTER THE TABLE NAME YOU WANT TO INSERT INTO
   read tableName
   if ! [ -f $tableName ]; then
     echo $tableName IS NOT EXIST
@@ -120,7 +239,8 @@ function insertInTable() {
 }
 
 function deleteFromTable() {
-  echo ENTER THE TABLE NAME
+  listTable
+  echo ENTER THE TABLE NAME YOU WANT TO DELETE FROM
   read tableName
   if ! [ -f $tableName ]; then
     echo $tableName IS NOT EXIST
@@ -154,7 +274,8 @@ function selectTable() {
     select choice in "select-all" "select-specific-record" "back-to-table-menu" "exit"; do
       case $choice in
       select-all)
-        echo -e "ENTER TABLE NAME : \c"
+        listTable
+        echo -e "ENTER TABLE NAME YOU WANT TO SELECT : \c"
         read tableName
         if ! [[ -f $tableName ]]; then
           # it dosn't exist
@@ -172,6 +293,7 @@ function selectTable() {
         break
         ;;
       select-specific-record)
+        listTable
         echo -e "Enter Table Name: \c"
         read tableName
         if ! [[ -f $tableName ]]; then
@@ -223,6 +345,7 @@ function selectTable() {
 }
 
 function connectDB() {
+  listDB
   echo ENTER THE DB YOU WANT TO CONNECT ON:
   read DBname
   if [ -d $DBname ]; then
@@ -233,84 +356,7 @@ function connectDB() {
         case $choice in
         create-table)
           clear
-          echo ENTER TABLE NAME
-          read tablename
-          if ! [[ $tablename =~ ^[a-zA-Z][a-zA-Z0-9]*$ ]]; then
-            echo INVAILD TABLE NAME
-          else
-            if [ -f $tablename ]; then
-              echo -e $tablename " IS ALREADY EXIST \n"
-            else
-              echo -e "ENTER NUMBER OF COLUMNS : \c"
-              read colsNum
-              while [[ ! ($colsNum =~ ^[0-9]*$) || $colsNum = "" ]]; do
-                echo -e "INVALID NUMBER"
-                echo -e "ENTER NUMBER OF COLUMNS : \c"
-                read colsNum
-              done
-              sep="|"
-              rSep="\n"
-              metaData="Field"$sep"Type"$sep"key"
-              for ((i = 0; i < $colsNum; i++)); do
-                if [[ $i == 0 ]]; then
-                  echo -e "ENTER PRIMARY KEY COLUMN NAME : \c"
-                  read colName
-                  while [[ ! ($colName =~ ^[a-zA-Z]*$) || $colName = "" ]]; do
-                    echo -e "invalid column name !!"
-                    echo -e "ENTER PRIMARY KEY COLUMN NAME : \c"
-                    read colName
-                  done
-                else
-                  echo -e "ENTER COLUMN NO.$i NAME : \c"
-                  read colName
-                  while [[ ! ($colName =~ ^[a-zA-Z]*$) || $colName = "" ]]; do
-                    echo -e "invalid column name !!"
-                    echo -e "Name of Column No.$i: \c"
-                    read colName
-                  done
-                fi
-                echo -e "Type of Column $colName: "
-                select var in "int" "varchar"; do
-                  case $var in
-                  int)
-                    colType="int"
-                    break
-                    ;;
-                  varchar)
-                    colType="varchar"
-                    break
-                    ;;
-                  *)
-                    echo INVALED CHOICE
-                    ;;
-                  esac
-                done
-
-                if [[ $i -eq 0 ]]; then
-                  metaData+=$rSep$colName$sep$colType$sep"PK"
-                else
-                  metaData+=$rSep$colName$sep$colType$sep""
-                fi
-                # columns names
-                if [[ $i == $colsNum ]]; then
-                  temp=$temp$colName
-                else
-                  # when count < colsNum
-                  temp=$temp$colName$sep
-                fi
-              done
-              touch .$tablename
-              echo -e $metaData >>.$tablename
-              touch $tablename
-              echo -e $temp >>$tablename
-              clear
-              if [[ $? == 0 ]]; then
-                echo -e "Table Created Successfully\n"
-              else
-                echo -e "Error Creating Table $tablename\n"
-              fi
-            fi
-          fi
+          createTable
           break
           ;;
         list-table)
@@ -365,25 +411,9 @@ while [ 1 ]; do
   select choice in "Create-Database" "List-Databases" "Connect-To-Databases" "Drop-Database" "EXIT"; do
     case $choice in
     Create-Database)
-      echo "ENTER YOUR Database NAME"
-      read DBname
-      #      check if db name is valid
-      if ! [[ $DBname =~ ^[a-zA-Z][a-zA-Z0-9]*$ ]]; then
-        clear
-        echo -e "ENTER VALID DATABASE NAME \n"
-      else
-        #        check if the database exist
-        if [ -d $DBname ]; then
-          clear
-          echo -e $DBname "DATABASE ALREDY EXISTES \n"
-          break
-        else
-          clear
-          mkdir $DBname
-          echo -e $DBname "CREATED SUCCESSFULLY \n"
-          break
-        fi
-      fi
+     clear
+     createDB
+     break
       ;;
     List-Databases)
       clear
@@ -396,18 +426,9 @@ while [ 1 ]; do
       break
       ;;
     Drop-Database)
-      echo -e "ENTER THE NAME OF DB YOU WANT TO DROP"
-      read DBname
-      if [ -d $DBname ]; then
-        clear
-        rm -r $DBname
-        echo -e $DBname "DROP SUCCESSFULLY \n"
-        break
-      else
-        clear
-        echo -e $DBname" IS NOT FOUND \n"
-        break
-      fi
+      clear
+      dropDB
+      break
       ;;
     EXIT)
       break 2
